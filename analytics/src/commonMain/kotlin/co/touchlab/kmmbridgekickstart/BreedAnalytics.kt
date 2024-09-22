@@ -1,6 +1,6 @@
 package co.touchlab.kmmbridgekickstart
 
-class BreedAnalytics internal constructor() {
+class  BreedAnalytics internal constructor() {
 
     fun favoriteClicked(id: Long) {
         sendEvent("favoriteClicked", "favoriteId" to id)

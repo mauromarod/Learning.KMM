@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.datetime.Clock
-import kotlin.random.Random
 
 class BreedRepository internal constructor(
     private val dbHelper: DatabaseHelper,
@@ -57,23 +56,19 @@ class BreedRepository internal constructor(
         delay(3000) // The server is too fast...
 
         // Simulate issues...
-        val resultEvent: BreedDataEvent = if (Random.nextBoolean()) {
-            BreedDataEvent.Error(BreedAnalytics.NotFetchedReason.RandomFail)
-        } else {
-            try {
-                val breedResult = dogApi.getJsonFromApi()
-                val breedList = breedResult.message.keys.sorted().toList()
-                breedAnalytics.breedsFetchedFromNetwork(breedList.size)
-                settings.putLong(DB_TIMESTAMP_KEY, clock.now().toEpochMilliseconds())
+        val resultEvent: BreedDataEvent = try {
+            val breedResult = dogApi.getJsonFromApi()
+            val breedList = breedResult.message.keys.sorted().toList()
+            breedAnalytics.breedsFetchedFromNetwork(breedList.size)
+            settings.putLong(DB_TIMESTAMP_KEY, clock.now().toEpochMilliseconds())
 
-                if (breedList.isNotEmpty()) {
-                    dbHelper.insertBreeds(breedList)
-                }
-
-                BreedDataEvent.RefreshedSuccess
-            } catch (e: Exception) {
-                BreedDataEvent.Error(BreedAnalytics.NotFetchedReason.NetworkError)
+            if (breedList.isNotEmpty()) {
+                dbHelper.insertBreeds(breedList)
             }
+
+            BreedDataEvent.RefreshedSuccess
+        } catch (e: Exception) {
+            BreedDataEvent.Error(BreedAnalytics.NotFetchedReason.NetworkError)
         }
 
         mutableDataEvent.emit(resultEvent)
